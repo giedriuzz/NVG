@@ -1,0 +1,38 @@
+# Byte-compiled / optimized files (Python & MicroPython)
+__pycache__/
+*.py[cod]
+*$py.class
+*.mpy
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Environment variables & secrets
+.env
+.env.*
+!.env.example
+
+# MicroPython / ESP32 build artifacts & logs
+*.log
+*.tmp
+*.bak
+
+# IDE & Editor settings
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Operating System files (Windows & macOS)
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+
+# Microsoft Office temporary lock files (kai atidaryti .xlsx failai)
+~$*.xlsx
+~$*.xls
