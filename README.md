@@ -48,9 +48,21 @@ The external LED on GPIO 3 provides tactile visual feedback when cycling modes:
 
 ---
 
-## 🇱🇹 Lietuviškai: Valdymo Logika
+## 🇱🇹 Lietuviškai
 
 Šis projektas – tai ESP32-C3 paremtas valdiklis UART šiluminei kamerai. Sistemoje įdiegtas minimalistinis 2 mygtukų valdymas, specialiai pritaikytas naktinio matymo / termovizinių monokuliarų sistemoms, kur fizinė vieta mygtukams yra labai ribota.
+
+### Aparatinė įranga (Hardware Setup)
+
+* **Mikrovaldiklis:** ESP32-C3 SuperMini (arba panašus)
+* **Kameros protokolas:** UCI (55 43 49...) su 115200 sparta (Baud)
+* **PB1 (Meniu / Minuso mygtukas):** GPIO 6 (Active Low į GND)
+* **PB2 (Veiksmo / Pliuso mygtukas):** GPIO 2 (Active Low į GND)
+* **Būsenos LED:** GPIO 3 (Active High – prijungti per rezistorių į GND)
+* **UART TX:** GPIO 9
+* **UART RX:** GPIO 10
+
+### Valdymo Logika
 
 Sistema turi 4 režimus. Įjungus prietaisą atsiduriate **PAGRINDINIAME (NORMAL)** režime.
 Ilgas **PB1** paspaudimas perjungia režimus ratu:
