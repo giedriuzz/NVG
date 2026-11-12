@@ -1,0 +1,6 @@
+project-includes = ["."]
+project-excludes = [".typings"]
+search-path = [".typings", "."]
+python-version = "3.12"
+python-platform = "linux"
+

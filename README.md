@@ -8,7 +8,8 @@ This project is an ESP32-C3 based controller for a UART thermal camera module. I
 * **Camera Protocol:** UCI (55 43 49...) at 115200 Baud
 * **PB1 (Menu/Minus Button):** GPIO 6 (Active Low to GND)
 * **PB2 (Action/Plus Button):** GPIO 2 (Active Low to GND)
-* **Status LED:** GPIO 3 (Active High - connect to GND)
+* **Status LED:** GPIO 3 (Active High / PWM - connect to GND via resistor)
+* **Battery Voltage Sense:** GPIO 4 (ADC1 via 10k + 10k voltage divider)
 * **UART TX:** GPIO 9
 * **UART RX:** GPIO 10
 
@@ -45,6 +46,21 @@ The external LED on GPIO 3 provides tactile visual feedback when cycling modes:
 * **2 Short Blinks:** Entered Contrast Mode
 * **3 Short Blinks:** Entered Enhancement Mode
 * **1 Long Solid Blink:** Returned to Normal Mode
+* **Gentle Continuous Pulse (Breathing):** Low battery warning ($\le 3.40\text{ V}$)
+* **Double-Blink Heartbeat:** Wi-Fi OTA Update Mode active
+
+### 3. Wi-Fi OTA Update Mode (No Internet Required)
+
+During normal operation, Wi-Fi is completely disabled to save battery power.
+To update files (`main.py`, `camera_uci.py`, `buttons.py`, etc.) wirelessly:
+
+1. Hold **PB2** (or both **PB1 + PB2**) while powering on the device for **1 second**.
+2. The status LED will start a **double-blink heartbeat** pattern.
+3. Connect with your phone or computer to the Wi-Fi network:
+   * **SSID:** `NVG-OTA`
+   * **Password:** `nvgupdate`
+4. Open **`http://192.168.4.1`** in your web browser.
+5. Select the updated `.py` files, click **Upload**, and press **Reboot** when finished. (Uploaded `.py` files are automatically checked for syntax errors before overwriting!)
 
 ---
 
@@ -58,7 +74,8 @@ The external LED on GPIO 3 provides tactile visual feedback when cycling modes:
 * **Kameros protokolas:** UCI (55 43 49...) su 115200 sparta (Baud)
 * **PB1 (Meniu / Minuso mygtukas):** GPIO 6 (Active Low į GND)
 * **PB2 (Veiksmo / Pliuso mygtukas):** GPIO 2 (Active Low į GND)
-* **Būsenos LED:** GPIO 3 (Active High – prijungti per rezistorių į GND)
+* **Būsenos LED:** GPIO 3 (Active High / PWM – prijungti per rezistorių į GND)
+* **Baterijos įtampos matavimas:** GPIO 4 (ADC1 per 10k + 10k įtampos daliklį)
 * **UART TX:** GPIO 9
 * **UART RX:** GPIO 10
 
@@ -93,3 +110,18 @@ Prie GPIO 3 prijungtas išorinis LED diodas padeda orientuotis, kokiame meniu es
 * **2 Trumpi mirksniai:** Įjungtas Kontrasto (Contrast) režimas
 * **3 Trumpi mirksniai:** Įjungtas Išryškinimo (Enhancement) režimas
 * **1 Ilgas mirksnis:** Grįžta į Pagrindinį (Normal) režimą
+* **Švelnus tolygus pulsavimas („kvėpavimas“):** Senkančios baterijos įspėjimas ($\le 3.40\text{ V}$)
+* **Dvigubas mirksėjimas (kas 1.2 s):** Įjungtas Wi-Fi OTA atnaujinimo režimas
+
+### 3. Programinės įrangos atnaujinimas per Wi-Fi (OTA)
+
+Įprasto darbo metu Wi-Fi yra visiškai išjungtas, kad neeikvotų baterijos.
+Norėdami belaidžiu būdu atnaujinti failus (`main.py`, `camera_uci.py`, `buttons.py` ir kt.) neišardydami korpuso:
+
+1. Įjunkite maitinimą laikydami nuspaustą **PB2** (arba abu **PB1 + PB2**) bent **1 sekundę**.
+2. Būsenos LED pradės mirksėti **dvigubais mirksniais** – tai reiškia, kad įjungtas OTA serveris.
+3. Telefonu arba kompiuteriu prisijunkite prie Wi-Fi tinklo:
+   * **Pavadinimas (SSID):** `NVG-OTA`
+   * **Slaptažodis:** `nvgupdate`
+4. Naršyklėje atidarykite adresą **`http://192.168.4.1`**.
+5. Pasirinkite atnaujintus `.py` failus, paspauskite **„Įkelti į ESP32-C3“**, o baigę – **„Perkrauti įrenginį“**. (Prieš perrašant `.py` failus, sistema automatiškai patikrina Python sintaksę, kad klaidingas failas nesugadintų valdiklio darbo.)

@@ -67,7 +67,8 @@ class UCICamera:
     def send_raw(self, frame: bytes) -> int:
         if self.debug:
             print(f"[TX] {self._format_hex(frame)}")
-        return self.uart.write(frame)
+        written = self.uart.write(frame)
+        return written if written is not None else 0
 
     def read_response(self, timeout_ms=300) -> bytes:
         start = time.ticks_ms()
@@ -79,9 +80,10 @@ class UCICamera:
                     buf.extend(chunk)
             time.sleep_ms(5)
             
-        if buf and self.debug:
-            print(f"[RX] {self._format_hex(buf)}")
-        return bytes(buf)
+        data = bytes(buf)
+        if data and self.debug:
+            print(f"[RX] {self._format_hex(data)}")
+        return data
 
     def calibrate(self):
         cmd = b'\x55\x43\x49\x12\x00\x10\x02\x43\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xCF\xC8'

@@ -2,6 +2,10 @@
   "include": [
     "."
   ],
+  "exclude": [
+    ".typings"
+  ],
+  "stubPath": ".typings",
   "pythonVersion": "3.12",
   "reportMissingImports": "warning"
 }

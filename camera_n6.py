@@ -53,7 +53,8 @@ class N6Camera:
         """Sends raw command frame to camera."""
         if self.debug:
             print(f"[TX] {self._format_hex(frame)}")
-        return self.uart.write(frame)
+        written = self.uart.write(frame)
+        return written if written is not None else 0
 
     def read_response(self, timeout_ms=300) -> bytes:
         """Reads response frame ending with END if available."""
@@ -68,9 +69,10 @@ class N6Camera:
                         break
             time.sleep_ms(5)
             
-        if buf and self.debug:
-            print(f"[RX] {self._format_hex(buf)}")
-        return bytes(buf)
+        data = bytes(buf)
+        if data and self.debug:
+            print(f"[RX] {self._format_hex(data)}")
+        return data
 
     # ------------------ Core Camera Commands ------------------ #
 
