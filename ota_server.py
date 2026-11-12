@@ -206,7 +206,7 @@ def disable_wifi():
         pass
 
 
-def run_ota_portal(ssid="NVG-OTA", password="nvgupdate", set_led_duty=None, read_battery_fn=None):
+def run_ota_portal(ssid="NVG-OTA", password="nvgupdate", set_led_duty=None, read_battery_fn=None, debug=False):
     """
     Starts the Wi-Fi AP and blocking HTTP OTA server loop with non-blocking LED heartbeat.
     Reboots the device when requested via the web UI.
@@ -219,13 +219,9 @@ def run_ota_portal(ssid="NVG-OTA", password="nvgupdate", set_led_duty=None, read
     else:
         ap.config(essid=ssid, authmode=network.AUTH_OPEN)
 
-    ip = ap.ifconfig()[0]
-    print("\n" + "=" * 60)
-    print("  [OTA MODE ACTIVE - WI-FI ACCESS POINT STARTED]")
-    print(f"  Wi-Fi SSID     : {ssid}")
-    print(f"  Wi-Fi Password : {password if (password and len(password) >= 8) else '(open)'}")
-    print(f"  Open in Browser: http://{ip}")
-    print("=" * 60 + "\n")
+    if debug:
+        ip = ap.ifconfig()[0]
+        print(f"[OTA] AP '{ssid}' started at http://{ip}")
 
     srv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     srv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -364,7 +360,8 @@ def run_ota_portal(ssid="NVG-OTA", password="nvgupdate", set_led_duty=None, read
                             else:
                                 try:
                                     os.rename(tmp_name, "/" + fname)
-                                    print(f"[OTA] Updated file: {fname} ({written} bytes)")
+                                    if debug:
+                                        print(f"[OTA] Updated file: {fname} ({written} bytes)")
                                     _send_response(conn, "200 OK", body=f"Išsaugota ({written} B)")
                                 except Exception as e:
                                     _send_response(conn, "500 Internal Server Error", body=str(e))
@@ -377,7 +374,8 @@ def run_ota_portal(ssid="NVG-OTA", password="nvgupdate", set_led_duty=None, read
                     _send_response(conn, "404 Not Found", body="Not Found")
 
             except Exception as e:
-                print(f"[OTA] Request error: {e}")
+                if debug:
+                    print(f"[OTA] Request error: {e}")
             finally:
                 try:
                     conn.close()
@@ -394,7 +392,8 @@ def run_ota_portal(ssid="NVG-OTA", password="nvgupdate", set_led_duty=None, read
             pass
         disable_wifi()
 
-    print("[OTA] Rebooting ESP32-C3 into Normal Mode...")
+    if debug:
+        print("[OTA] Rebooting ESP32-C3 into Normal Mode...")
     time.sleep_ms(400)
     machine.reset()
 

@@ -1,13 +1,14 @@
 import machine
 import time
-import sys
-import select
 from camera_uci import UCICamera
 from buttons import Button
 
 # ==============================================================================
 # PIN DEFINITIONS & HARDWARE CONFIGURATION
 # ==============================================================================
+
+# Debug Mode (False = fast & silent for battery operation; True = USB Serial logs & hex input)
+DEBUG = False
 
 # UART Configuration
 TX_PIN = 9           # ESP32 TX -> Camera RX 
@@ -131,11 +132,13 @@ def check_battery():
 
     if not low_battery_active and v_bat <= LOW_BATTERY_VOLTAGE:
         low_battery_active = True
-        print(f"[Battery] LOW BATTERY WARNING: {v_bat:.2f}V (LED pulsing enabled)")
+        if DEBUG:
+            print(f"[Battery] LOW BATTERY WARNING: {v_bat:.2f}V (LED pulsing enabled)")
     elif low_battery_active and v_bat >= LOW_BATTERY_RECOVERY:
         low_battery_active = False
         set_led_duty(0)
-        print(f"[Battery] Battery recovered: {v_bat:.2f}V (LED pulsing stopped)")
+        if DEBUG:
+            print(f"[Battery] Battery recovered: {v_bat:.2f}V (LED pulsing stopped)")
 
 # ==============================================================================
 # BUTTON ACTION HANDLERS
@@ -146,16 +149,20 @@ def on_pb1_click(btn):
     if camera is None:
         return
     if active_mode == MODE_NORMAL:
-        print("[PB1 Short] -> Shutter Calibration (NUC)")
+        if DEBUG:
+            print("[PB1 Short] -> Shutter Calibration (NUC)")
         camera.calibrate()
     elif active_mode == MODE_BRIGHTNESS:
-        print(f"[PB1 Short] -> Brightness -{BRIGHTNESS_STEP}")
+        if DEBUG:
+            print(f"[PB1 Short] -> Brightness -{BRIGHTNESS_STEP}")
         camera.adjust_brightness(-BRIGHTNESS_STEP)
     elif active_mode == MODE_CONTRAST:
-        print(f"[PB1 Short] -> Contrast -{CONTRAST_STEP}")
+        if DEBUG:
+            print(f"[PB1 Short] -> Contrast -{CONTRAST_STEP}")
         camera.adjust_contrast(-CONTRAST_STEP)
     elif active_mode == MODE_ENHANCEMENT:
-        print(f"[PB1 Short] -> Enhancement -{ENHANCEMENT_STEP}")
+        if DEBUG:
+            print(f"[PB1 Short] -> Enhancement -{ENHANCEMENT_STEP}")
         camera.adjust_enhancement(-ENHANCEMENT_STEP)
 
 def on_pb1_long_press(btn):
@@ -163,9 +170,8 @@ def on_pb1_long_press(btn):
     global active_mode
     active_mode = (active_mode + 1) % len(MODE_NAMES)
     
-    print(f"\n[{'='*40}]")
-    print(f"MODE CHANGED: >>> {MODE_NAMES[active_mode]} <<<")
-    print(f"[{'='*40}]\n")
+    if DEBUG:
+        print(f"MODE CHANGED: >>> {MODE_NAMES[active_mode]} <<<")
     
     if active_mode == MODE_NORMAL:
         # Long solid blink for normal mode
@@ -180,16 +186,20 @@ def on_pb2_click(btn):
         return
     if active_mode == MODE_NORMAL:
         next_zoom = (camera.current_zoom_idx + 1) % len(camera.ZOOM_LEVELS)
-        print(f"[PB2 Short] -> Cycling Zoom to preset {next_zoom}")
+        if DEBUG:
+            print(f"[PB2 Short] -> Cycling Zoom to preset {next_zoom}")
         camera.set_zoom(next_zoom)
     elif active_mode == MODE_BRIGHTNESS:
-        print(f"[PB2 Short] -> Brightness +{BRIGHTNESS_STEP}")
+        if DEBUG:
+            print(f"[PB2 Short] -> Brightness +{BRIGHTNESS_STEP}")
         camera.adjust_brightness(BRIGHTNESS_STEP)
     elif active_mode == MODE_CONTRAST:
-        print(f"[PB2 Short] -> Contrast +{CONTRAST_STEP}")
+        if DEBUG:
+            print(f"[PB2 Short] -> Contrast +{CONTRAST_STEP}")
         camera.adjust_contrast(CONTRAST_STEP)
     elif active_mode == MODE_ENHANCEMENT:
-        print(f"[PB2 Short] -> Enhancement +{ENHANCEMENT_STEP}")
+        if DEBUG:
+            print(f"[PB2 Short] -> Enhancement +{ENHANCEMENT_STEP}")
         camera.adjust_enhancement(ENHANCEMENT_STEP)
 
 def on_pb2_long_press(btn):
@@ -197,10 +207,11 @@ def on_pb2_long_press(btn):
     if camera is None:
         return
     if active_mode == MODE_NORMAL:
-        print("\n[PB2 Long] -> Cycling Color Palette")
+        if DEBUG:
+            print("[PB2 Long] -> Cycling Color Palette")
         camera.next_palette()
-    else:
-        print("\n[PB2 Long] -> Ignored in Settings mode")
+    elif DEBUG:
+        print("[PB2 Long] -> Ignored in Settings mode")
 
 # ==============================================================================
 # MAIN INITIALIZATION & RUN LOOP
@@ -208,11 +219,8 @@ def on_pb2_long_press(btn):
 
 def main():
     global camera, led_pwm, adc_bat
-    print("=" * 60)
-    print("ESP32-C3 NVG Thermal Camera Controller Starting...")
-    print("Protocol: UCI (55 43 49)")
-    print("Interface: 2-Button Minimalist UI")
-    print("=" * 60)
+    if DEBUG:
+        print("ESP32-C3 NVG Thermal Camera Controller Starting...")
 
     # Force internal ESP32 LED (GPIO 8) OFF so it doesn't irritate the eyes
     try:
@@ -225,7 +233,8 @@ def main():
         try:
             led_pwm = machine.PWM(machine.Pin(PIN_STATUS_LED), freq=1000, duty_u16=0)
         except Exception as e:
-            print(f"[Warning] Could not initialize PWM LED on GPIO{PIN_STATUS_LED}: {e}")
+            if DEBUG:
+                print(f"[Warning] Could not initialize PWM LED on GPIO{PIN_STATUS_LED}: {e}")
             led_pwm = None
 
     # Initialize Battery ADC (10k + 10k divider)
@@ -233,11 +242,13 @@ def main():
         try:
             adc_bat = machine.ADC(machine.Pin(PIN_BATTERY_ADC))
             adc_bat.atten(machine.ADC.ATTN_11DB)
-            v_init = read_battery_voltage()
-            print(f"[Battery] Initialized ADC on GPIO{PIN_BATTERY_ADC} (Current: {v_init:.2f}V)")
+            if DEBUG:
+                v_init = read_battery_voltage()
+                print(f"[Battery] Initialized ADC on GPIO{PIN_BATTERY_ADC} (Current: {v_init:.2f}V)")
             check_battery()
         except Exception as e:
-            print(f"[Warning] Could not initialize Battery ADC on GPIO{PIN_BATTERY_ADC}: {e}")
+            if DEBUG:
+                print(f"[Warning] Could not initialize Battery ADC on GPIO{PIN_BATTERY_ADC}: {e}")
             adc_bat = None
 
     # Initialize Buttons
@@ -255,7 +266,8 @@ def main():
 
     # Check if PB2 (or PB1+PB2) is held at power-on to enter Wi-Fi OTA Update Mode
     if pb2._read_is_pressed():
-        print(f"[Boot] PB2 held at startup. Hold for {OTA_BOOT_HOLD_MS}ms to enter OTA Mode...")
+        if DEBUG:
+            print(f"[Boot] PB2 held at startup. Hold for {OTA_BOOT_HOLD_MS}ms to enter OTA Mode...")
         ota_triggered = True
         start_hold = time.ticks_ms()
         while time.ticks_diff(time.ticks_ms(), start_hold) < OTA_BOOT_HOLD_MS:
@@ -270,7 +282,8 @@ def main():
                 ssid=OTA_WIFI_SSID,
                 password=OTA_WIFI_PASSWORD,
                 set_led_duty=set_led_duty,
-                read_battery_fn=read_battery_voltage
+                read_battery_fn=read_battery_voltage,
+                debug=DEBUG
             )
             return
 
@@ -287,23 +300,17 @@ def main():
         tx_pin=TX_PIN,
         rx_pin=RX_PIN,
         baudrate=UART_BAUDRATE,
-        debug=True
+        debug=DEBUG
     )
 
-    print("\nButtons Initialized:")
-    print("  PB1 (GPIO 6) - MENU / MINUS:")
-    print("    * Normal Mode: Short -> NUC Calibrate  | Long -> Enter Settings Mode")
-    print("    * Setup Mode:  Short -> Value -        | Long -> Next Setting Mode")
-    print("  PB2 (GPIO 2) - ACTION / PLUS:")
-    print("    * Normal Mode: Short -> Cycle Zoom     | Long -> Cycle Palette")
-    print("    * Setup Mode:  Short -> Value +        | Long -> (Ignored)")
-    print(f"\nInitial Mode: {MODE_NAMES[active_mode]}")
-    print("Listening for button events and UART data...\n")
-
-    # Set up console input polling
-    poll_obj = select.poll()
-    poll_obj.register(sys.stdin, select.POLLIN)
+    poll_obj = None
     input_buffer = ""
+    if DEBUG:
+        import sys
+        import select
+        print(f"Initial Mode: {MODE_NAMES[active_mode]}")
+        poll_obj = select.poll()
+        poll_obj.register(sys.stdin, select.POLLIN)
 
     # Brief startup delay
     time.sleep_ms(300)
@@ -326,15 +333,16 @@ def main():
         if low_battery_active:
             update_led_pulse(now_ms)
 
-        # Check for UART input from Camera (unsolicited or response)
+        # Check for UART input from Camera
         if camera.uart.any():
             buf = camera.uart.read(camera.uart.any())
-            if buf:
+            if DEBUG and buf:
                 hex_str = " ".join(f"{b:02X}" for b in buf)
                 print(f"[CAM RX]: {hex_str}")
 
-        # Check for terminal input (manual hex commands)
-        if poll_obj.poll(0):
+        # Check for terminal input (manual hex commands - only in DEBUG mode)
+        if DEBUG and poll_obj and poll_obj.poll(0):
+            import sys
             char = sys.stdin.read(1)
             if char == '\n' or char == '\r':
                 if input_buffer.strip():
@@ -342,9 +350,8 @@ def main():
                         hex_bytes = bytes.fromhex(input_buffer)
                         print(f"[Manual TX] {input_buffer.strip().upper()}")
                         camera.send_raw(hex_bytes)
-                        # We let the main loop catch the [CAM RX] response
                     except ValueError:
-                        print("[Error] Invalid hex format. Type pairs of hex digits (e.g., '23 57 66').")
+                        print("[Error] Invalid hex format.")
                     input_buffer = ""
             else:
                 input_buffer += char
@@ -356,4 +363,5 @@ if __name__ == '__main__':
     try:
         main()
     except KeyboardInterrupt:
-        print("\n[System] Halted by user (KeyboardInterrupt).")
+        if DEBUG:
+            print("\n[System] Halted by user (KeyboardInterrupt).")

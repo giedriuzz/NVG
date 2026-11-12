@@ -42,7 +42,7 @@ class UCICamera:
         b'\x55\x43\x49\x12\x00\x10\x04\x45\x00\x64\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xF7\xAB', # 100
     ]
 
-    def __init__(self, uart_id=1, tx_pin=9, rx_pin=10, baudrate=115200, debug=True):
+    def __init__(self, uart_id=1, tx_pin=9, rx_pin=10, baudrate=115200, debug=False):
         self.debug = debug
         self.uart = machine.UART(
             uart_id,
@@ -71,6 +71,8 @@ class UCICamera:
         return written if written is not None else 0
 
     def read_response(self, timeout_ms=300) -> bytes:
+        if not self.debug:
+            return b""
         start = time.ticks_ms()
         buf = bytearray()
         while time.ticks_diff(time.ticks_ms(), start) < timeout_ms:
@@ -78,23 +80,27 @@ class UCICamera:
                 chunk = self.uart.read(self.uart.any())
                 if chunk:
                     buf.extend(chunk)
+                    if len(buf) >= 23:
+                        break
             time.sleep_ms(5)
             
         data = bytes(buf)
-        if data and self.debug:
+        if data:
             print(f"[RX] {self._format_hex(data)}")
         return data
 
     def calibrate(self):
         cmd = b'\x55\x43\x49\x12\x00\x10\x02\x43\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xCF\xC8'
-        print("[UCICamera] Executing Shutter Calibration (NUC)...")
+        if self.debug:
+            print("[UCICamera] Executing Shutter Calibration (NUC)...")
         self.send_raw(cmd)
         return self.read_response(500)
 
     def set_palette(self, index: int):
         index = max(0, min(len(self.PALETTES) - 1, index))
         self.current_palette = index
-        print(f"[UCICamera] Palette set to index {index}")
+        if self.debug:
+            print(f"[UCICamera] Palette set to index {index}")
         self.send_raw(self.PALETTES[index])
         return self.read_response()
 
@@ -105,7 +111,8 @@ class UCICamera:
     def set_zoom(self, idx: int):
         idx = max(0, min(len(self.ZOOM_LEVELS) - 1, idx))
         self.current_zoom_idx = idx
-        print(f"[UCICamera] Zoom set to preset {idx}")
+        if self.debug:
+            print(f"[UCICamera] Zoom set to preset {idx}")
         self.send_raw(self.ZOOM_LEVELS[idx])
         return self.read_response()
 
@@ -119,7 +126,8 @@ class UCICamera:
         direction = 1 if delta > 0 else -1
         idx = max(0, min(len(self.BRIGHTNESS_LEVELS) - 1, self.current_brightness_idx + direction))
         self.current_brightness_idx = idx
-        print(f"[UCICamera] Brightness set to preset {idx}")
+        if self.debug:
+            print(f"[UCICamera] Brightness set to preset {idx}")
         self.send_raw(self.BRIGHTNESS_LEVELS[idx])
         return self.read_response()
 
@@ -127,7 +135,8 @@ class UCICamera:
         direction = 1 if delta > 0 else -1
         idx = max(0, min(len(self.CONTRAST_LEVELS) - 1, self.current_contrast_idx + direction))
         self.current_contrast_idx = idx
-        print(f"[UCICamera] Contrast set to preset {idx}")
+        if self.debug:
+            print(f"[UCICamera] Contrast set to preset {idx}")
         self.send_raw(self.CONTRAST_LEVELS[idx])
         return self.read_response()
 
@@ -135,7 +144,8 @@ class UCICamera:
         direction = 1 if delta > 0 else -1
         idx = max(0, min(len(self.ENHANCEMENT_LEVELS) - 1, self.current_enhancement_idx + direction))
         self.current_enhancement_idx = idx
-        print(f"[UCICamera] Enhancement set to preset {idx}")
+        if self.debug:
+            print(f"[UCICamera] Enhancement set to preset {idx}")
         self.send_raw(self.ENHANCEMENT_LEVELS[idx])
         return self.read_response()
 
@@ -144,14 +154,15 @@ class UCICamera:
         if self.auto_calib_enabled:
             cmd = b'\x55\x43\x49\x12\x00\x10\x02\x41\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x0D\x3E' # Auto off
         self.auto_calib_enabled = not self.auto_calib_enabled
-        print(f"[UCICamera] Auto calibration {'ON' if self.auto_calib_enabled else 'OFF'}")
+        if self.debug:
+            print(f"[UCICamera] Auto calibration {'ON' if self.auto_calib_enabled else 'OFF'}")
         self.send_raw(cmd)
         return self.read_response()
 
     def sync_parameters(self):
-        print("[UCICamera] Skipping sync_parameters for now.")
-        pass
+        if self.debug:
+            print("[UCICamera] Skipping sync_parameters for now.")
 
     def query_image_parameters(self):
-        print("[UCICamera] Query parameters not mapped yet.")
-        pass
+        if self.debug:
+            print("[UCICamera] Query parameters not mapped yet.")
